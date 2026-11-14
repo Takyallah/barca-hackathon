@@ -14,8 +14,8 @@ much better it is.
 **Why rules and not a model.** The only ground truth is 5 minutes: 17 possessions and 4
 stoppages. That is too little to train on or to tune weights against, and the organisers show
 that even one smoothing window tuned on it picks the wrong value. So every threshold is a round
-number with a football reason, and we used the public window to check correctness and to see
-which signals carry information, not to fit them.
+number with a football reason, and none was fitted to the public window. Section 5 says exactly
+what we did use that window for.
 
 **Why two steps.** The ranking metric matches whole possessions by temporal overlap, so it
 rewards the right number of possessions with sharp boundaries. A dead ball always ends a
@@ -92,6 +92,9 @@ miss, so abstaining can never score better than writing the label.
 **Not used:** the tactical video, the homography (only needed for video work), and the broadcast
 video with its tracking and homography (not synchronised to the tactical timeline).
 
+**Training data:** none. Nothing in the pipeline is trained, so no labelled dataset was used,
+from this match or any other. We used no hand labels and no outside data about the match.
+
 **Tried and dropped:**
 
 - **A ball-state channel.** We checked the channel names in the ATD metadata: the ball has only
@@ -102,9 +105,10 @@ video with its tracking and homography (not synchronised to the tactical timelin
   of 0.8, 1.3 and 2.8 s; a 3 s rule cannot produce them and merges their neighbours.
 - **A softer reset**, where control by the original team cancels the challenger's count frame for
   frame. It produced identical output over the whole match, so we removed it.
-- **Other thresholds.** 0.6 s fragments possessions and lowers team accuracy; 1.6 s merges them;
-  a 3 m radius and a 12 m/s speed cap change the counts without improving accuracy; removing the
-  pass rule lowers team accuracy and merges possessions.
+- **Other thresholds**, compared on the public window after the rule was fixed; we adopted none.
+  0.6 s fragments possessions and lowers team accuracy; 1.6 s merges them; a 3 m radius and a
+  12 m/s speed cap change the counts without improving accuracy; removing the pass rule lowers
+  team accuracy and merges possessions.
 - **The Smart Tagging team of a set piece** as the restart team. Every throw-in is tagged with no
   team, so we use the first team near the ball instead.
 - **Interpolating short ball gaps.** Implemented for gaps up to 0.5 s, but it has no effect here:
@@ -159,6 +163,33 @@ We did not pick the version with the best public spellF1. An earlier version sco
 but labelled far less of the long ball gaps as dead. We kept the later one because the
 no-ground-truth check above says those gaps are stoppages, and the public window, with one long
 gap out of 80, cannot measure that.
+
+### What the public 5 minutes were used for
+
+The rules say the public window is for checking the pipeline, not for training and not for
+tuning. We describe our use of it in full so that it can be judged against that.
+
+- **Nothing was trained or fitted on it.** There is no model, and no weight or threshold was set
+  by searching for the value that scores best there. An early version of `deadball.py` had an
+  optional grid over two settings on the public window; it was never run on the match and has
+  been removed.
+- **No version was chosen by its public score.** We submit the version that scores lower there
+  (0.5548 against 0.5806), for the reason above.
+- **Step 2 was fixed before the first run on the match** and has not changed since. When we
+  chose the one-second threshold we did look at the possession lengths in the public truth,
+  which ruled out our first idea of 3 s.
+- **It was used to find errors, and what we found changed step 1.** After the first run,
+  dead-ball recall in the window was 0.44. We compared each dead-ball signal and our predicted
+  stoppages with the public truth, and made these changes:
+
+| change to step 1 | what the public window showed | support that does not use it |
+|---|---|---|
+| player-speed pivot moved from the 25th percentile to the match median | players slower than the median on 78% of dead frames, 15% of live frames | the median is the neutral choice; whole-match check in section 3 |
+| long ball gaps count as dead, open-play tags as live | stoppages were being missed | whole-match check in section 3 |
+| "ball stationary" removed | the same rate on dead and live frames | none: this rests on the public window alone |
+| waiting for a restart ends at a kick, or with the ball 8 m infield | predicted stoppages ran on after play had restarted | restarts are taken at the edge of the pitch |
+| kick detection corrected | not used | a coding fault found by reading the code, reproduced by a synthetic test |
+| a goal counts only if a kick-off tag follows within 300 s | not used | Smart Tagging tag timings over the whole match |
 
 ## 6. Limitations
 

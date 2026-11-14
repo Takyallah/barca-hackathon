@@ -5,7 +5,6 @@ Tagging only. It also writes a test submission (D where dead, smoothed nearest-p
 elsewhere) so the effect of the dead-ball step can be scored on its own.
 
     python possession/deadball.py                # build, write submission, report on public window
-    python possession/deadball.py --calibrate    # small grid on the public window (sanity check only)
     python possession/deadball.py --refresh      # re-parse the ATD instead of using the cache
 
 The first run parses the ATD (a minute or two) and caches arrays in ./cache (gitignored).
@@ -405,8 +404,6 @@ def report(labels, dead, name):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--refresh", action="store_true", help="re-parse the ATD")
-    parser.add_argument("--calibrate", action="store_true",
-                        help="grid over switch penalty and energy pivot, public window only")
     parser.add_argument("--out", default=os.path.join(RESULTS_DIR, "deadball_v1.csv"))
     args = parser.parse_args()
 
@@ -419,19 +416,6 @@ def main():
     ball, px, py, ps, team = load_tracking(refresh=args.refresh)
     feats = build_features(ball, px, py, ps, p)
     team_labels = smooth(nearest_team_codes(ball, px, py, team), 50)
-
-    if args.calibrate:
-        print("\npenalty  energy_q   alive/dead F1   D F1    spellF1   (public window, 4 stoppages)")
-        for q in (0.35, 0.50, 0.65):
-            for pen in (10, 25, 50, 100):
-                pp = dict(p, energy_q=q, switch_penalty=pen)
-                dead = dead_mask(evidence(feats, pp, graded), pp)
-                r = score(labels_from(dead, team_labels, graded))
-                print("  {:>5}   {:>6}     {:.4f}        {:.3f}   {:.4f}".format(
-                    pen, q, r["alive_dead_f1"], r["per_class"]["D"]["f1"], r["spell_f1_mean"]))
-        print("\nOnly 4 dead-ball stretches here. Prefer the defaults unless a setting is "
-              "clearly broken.")
-        return
 
     dead = dead_mask(evidence(feats, p, graded), p)
     labels = labels_from(dead, team_labels, graded)
