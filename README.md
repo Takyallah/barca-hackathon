@@ -178,7 +178,8 @@ The notebooks additionally want `kloppy` and `matplotlib` (`requirements-starter
 ## Our solution — team Los Egipcios
 
 Everything of ours is in `possession/` and `tests/`. It uses the tactical tracking (ATD) and the
-Smart Tagging only: no video, no homography, no broadcast feed, no training.
+Smart Tagging only: no video, no homography, no broadcast feed, no training. The technical
+document is **[Los_Egipcios.md](Los_Egipcios.md)**.
 
 | step | file | what it does |
 |---|---|---|
