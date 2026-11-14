@@ -10,6 +10,9 @@ question to answer with it.
 
 ---
 
+> **This fork is the submission of team Los Egipcios.** How it works and how to regenerate our
+> file: [Our solution](#our-solution--team-los-egipcios), at the end of this page.
+
 ## The task
 
 **For every frame of the match, say who has the ball.**
@@ -169,6 +172,54 @@ The notebooks additionally want `kloppy` and `matplotlib` (`requirements-starter
 | data released | **October 20, 2026** |
 | submission deadline | **November 17, 2026** |
 | results announced | **Before November 26, 2026**      |
+
+---
+
+## Our solution — team Los Egipcios
+
+Everything of ours is in `possession/` and `tests/`. It uses the tactical tracking (ATD) and the
+Smart Tagging only: no video, no homography, no broadcast feed, no training.
+
+| step | file | what it does |
+|---|---|---|
+| 1 | `possession/deadball.py` | Is the ball in play? Per-frame evidence (ball outside the lines, waiting for a restart, player speed against the match median, ball untracked for 10 s or more, Smart Tagging set pieces, open-play phases and goals), decoded with a two-state Viterbi so stoppages come out as clean stretches. |
+| 2 | `possession/control.py` | Which team has it? A team is near the ball when its closest player is within 2 m and 1 m closer than the nearest opponent. Possession stays with the last team until the other team shows control for 1.0 s (added up across its players) or completes a pass. The switch is backdated to where that control began. After a dead ball, the first team near the ball has it at once. |
+| 3 | `possession/run.py` | The entry point: tracking, step 1, step 2, submission CSV. |
+
+`possession/diagnose_deadball.py`, `possession/diagnose_handover.py` and
+`possession/atd_channels.py` are diagnostics we used along the way; they are not part of the
+pipeline and print aggregates only.
+
+### Reproduce our file
+
+Python 3.14.4, with the exact package versions in `requirements-lock.txt` (numpy 2.5.4,
+pandas 3.1.1).
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate                 # Linux / macOS: source .venv/bin/activate
+pip install -r requirements-lock.txt
+# unpack the data bundle into data/ as described in DATA.md
+python possession/run.py               # writes evaluation/results/Los_Egipcios.csv
+python evaluation/validate_submission.py evaluation/results/Los_Egipcios.csv
+```
+
+The run takes a few minutes the first time (it parses the tracking and caches it in `cache/`).
+There is no randomness anywhere in the pipeline, so the same command writes the same bytes every
+time; `run.py` prints the SHA-256 of the file it wrote. The file is written with `\n` line ends
+on every platform.
+
+### Tests
+
+```bash
+python -m unittest discover -s tests -v    # about 10 s, needs no match data
+python tests/scenarios.py                  # 15 football situations, expected vs produced
+```
+
+The tests use synthetic data only: hand-built situations with a known right answer (a brief touch,
+a pass rolling past two opponents, a contested ball, the ball untracked across a hand-over, a
+restart after a dead ball, ...) and a synthetic full-length match that runs the whole pipeline and
+is scored with the official scorer against its own known answer.
 
 ---
 

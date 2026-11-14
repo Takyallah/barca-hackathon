@@ -1,0 +1,6 @@
+# Exact environment our submission is generated with (Python 3.14.4, Windows).
+#   python -m venv .venv && .venv\Scripts\pip install -r requirements-lock.txt
+numpy==2.5.4
+pandas==3.1.1
+python-dateutil==4.0.0
+tzdata==2026.6

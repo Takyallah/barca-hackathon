@@ -62,3 +62,14 @@ __pycache__/
 venv/
 env/
 .DS_Store
+
+# -- local additions ----------------------------------------------------------------------------
+# Second copy of the match data and derived caches: never commit.
+Dataset/
+cache/
+
+# Captured run output (aggregates only, but not part of the repo)
+*_output.md
+
+# Local working notes, not part of the submission
+CLAUDE.md
